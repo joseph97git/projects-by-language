@@ -1,0 +1,15 @@
+<div class="row">
+    <div class="col-xs-12 col-sm-4">
+        <div class="list-group">
+            <a 
+                class="list-group-item"
+                [routerLink]="['/charts', chart.id]"
+                *ngFor="let chart of charts">
+                {{ chart.name }}
+            </a>
+        </div>
+    </div>
+    <div class="col-xs-12 col-sm-4">
+        <router-outlet></router-outlet>
+    </div>
+</div>
