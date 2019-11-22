@@ -10,6 +10,8 @@ import { UsersComponent } from './users/users.component';
 import { UserComponent } from './users/user/user.component';
 import { ChartComponent } from './charts/chart/chart.component';
 import { ChartEditComponent } from './charts/chart-edit/chart-edit.component';
+import { ChartsService } from './charts/charts.service';
+import { ChartResolver } from './charts/chart/chart-resolver.service';
 
 @NgModule({
   declarations: [
@@ -26,7 +28,7 @@ import { ChartEditComponent } from './charts/chart-edit/chart-edit.component';
     ChartsModule,
     AppRoutingModule
   ],
-  providers: [],
+  providers: [ChartsService, ChartResolver],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

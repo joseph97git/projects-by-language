@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Data } from '@angular/router';
 
 @Component({
   selector: 'app-chart',
@@ -8,7 +9,13 @@ import { Component, OnInit } from '@angular/core';
 export class ChartComponent implements OnInit {
   chart: {id: number, name: string, status: string};
 
-  constructor() {}
+  constructor(private route: ActivatedRoute) {}
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.route.data.subscribe(
+      (data: Data) => {
+        this.chart = data['chart']
+      }
+    )
+  }
 }
