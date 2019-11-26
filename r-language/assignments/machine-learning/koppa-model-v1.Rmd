@@ -1,0 +1,108 @@
+---
+title: "koppa-model-v1"
+author: "Joseph Kim"
+date: "11/26/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=TRUE, results='hide'}
+## import libraries
+library(tidyquant)
+library(tidyverse)
+library(ggplot2)
+library(reshape2)
+library(knitr)
+```
+
+```{r}
+## retrieving data
+
+# define timeframe
+start_date = "2018-11-15"
+end_date = "2019-11-25"
+
+# get stock data
+AMD <- tq_get("AMD", get="stock.prices", from=start_date, to=end_date)
+```
+
+```{r}
+# candlestick coloring function
+candle_color <- function(open, close) {
+  if (open == close) {
+    return("gray")
+  }
+  else if (open < close) {
+    return ("green")
+  }
+  else {
+    return ("red")
+  }
+}
+
+# store coloring
+open <- AMD$open
+close <- AMD$close
+candleColors <- mapply(candle_color, open, close) 
+
+head(candleColors)
+```
+
+```{r}
+# transpose and reform into df
+amd <- as.data.frame(t(AMD))
+colnames(amd) <- as.character(unlist(amd[1,]))
+amd <- amd[-1, ]
+
+# drop volume row
+amd <- amd[-c(5),]
+
+# melt
+amd <- melt(as.matrix(amd))
+
+# rename columns
+colnames(amd) <- c("type", "date", "value")
+
+head(amd)
+```
+
+```{r}
+## plotting data
+
+# convert to numeric
+amd$value <- as.numeric(as.character(amd$value))
+
+# get price limits
+minval <- round(min(amd$value))
+maxval <- round(max(amd$value))
+
+# set scales
+dollars_scale <- 5
+day_scale <- 7
+
+# toggle x-ticks
+ticks_on <- element_text(angle = -90, vjust = 0.3)
+ticks_off <- element_blank()
+ticks_status <- ticks_off
+
+# plot
+ggplot(amd) + 
+  geom_boxplot(aes(x=date, y=value, group=date), coef=100, fill=candleColors) + 
+  theme(axis.text.x = ticks_status) + coord_cartesian(ylim=c(minval, maxval)) + scale_y_continuous(breaks=seq(minval, maxval, dollars_scale)) +
+  labs(title="AMD", x="date", y="price")
+```
+
+```{r}
+# SLR strategy
+# 1) split data into train and test
+# 2) fit SLR model using price and volume in train
+# 3) buy, sell pts based on deviation over training timeframe
+# 4) equity curve over training timeframe (Sharpe ratio, Drawdown)
+# 5) buy, sell pts based on deviation over testing timeframe
+# 6) equity curve over testing timeframe (Sharpe ratio, Drawdown)
+# 7) compare performance 
+```
+
