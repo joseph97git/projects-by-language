@@ -1,0 +1,106 @@
+---
+title: "backtest-second-day"
+author: "Joseph Kim"
+date: "12/1/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(quantmod)
+library(ggplot2)
+```
+
+```{r}
+# define timeframe
+start_date = as.Date("2018-11-15")
+end_date = as.Date("2019-11-25")
+
+# load data into env
+getSymbols('SPY', from=start_date, to=end_date)
+head(SPY)
+```
+
+```{r}
+# store in df, change colnames
+spy_data <- as.data.frame(SPY)
+colnames(spy_data) <- c("open", "high", "low", "close", "volume", "adjusted")
+head(spy_data)
+```
+
+```{r}
+# get red/green day 
+getRedGreen <- function(open, close) {
+  if (open < close) {
+    return("green")
+  }
+  else if (open > close) {
+    return("red")
+  }
+  else {
+    return("doji")
+  }
+}
+```
+
+```{r}
+# add red/green day column to data
+color <- mapply(getRedGreen, spy_data$open, spy_data$close)
+spy_data$color <- color
+head(spy_data)
+```
+
+```{r}
+# get indexes of day after a consecutive 3+ days streak followed by a reversal day
+# you must specify the streak color either green or red
+#
+# e.g. 1, 2, 3, 4, >5<
+#      g, g, g, r, >r<
+# return 5
+#
+# e.g. 1, 2, 3, 4, 5, >6<
+#      r, r, r, r, g, >g<
+# return 6
+getPostStreakReversal <- function(colorSeq, streakColor, streakNum) {
+  len <- length(colorSeq)
+  
+  indexes <- numeric(0) # store indexes of day after reversal
+  
+  streakHolder <- character(0) # store current streak
+  streakIsValid <- FALSE # state of current streak
+  
+  for (i in 1:len) {
+    curr_color <- colorSeq[i] # get current color
+    
+    # check if streak is valid
+    if (streakIsValid) {
+      if (curr_color != streakColor && (i + 1) <= len) { # found reversal
+        append(i + 1) # add to indexes
+        
+        # reset streak
+        streakHolder <- character(0)
+        streakIsValid <- FALSE
+      }
+    }
+    
+    # check if current color can be added to the streak
+    if (curr_color == streakColor) {
+      streakHolder <- append(streakHolder, curr_color) # add to curr streak
+      if (length(streakHolder) >= streakNum && !streakIsValid) { 
+        streakIsValid <- TRUE # entered a valid streak
+      }
+    } 
+    else {
+      # reset streak
+      streakHolder <- character(0)
+      streakIsValid <- FALSE
+    }
+  }
+  
+  return(indexes)
+}
+```
+

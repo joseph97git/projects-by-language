@@ -1,0 +1,255 @@
+---
+title: "koppa-model-v1"
+author: "Joseph Kim"
+date: "11/26/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=TRUE, results='hide'}
+## import libraries
+library(tidyquant)
+library(tidyverse)
+library(ggplot2)
+library(reshape2)
+library(knitr)
+library(gridExtra)
+```
+
+```{r}
+## retrieving data
+
+# define timeframe
+start_date = "2018-11-15"
+end_date = "2019-11-25"
+
+# get stock data
+AMD <- tq_get("AMD", get="stock.prices", from=start_date, to=end_date)
+```
+
+```{r}
+# candlestick coloring function
+candle_color <- function(open, close) {
+  if (open == close) {
+    return("gray")
+  }
+  else if (open < close) {
+    return ("green")
+  }
+  else {
+    return ("red")
+  }
+}
+
+# store coloring
+open <- AMD$open
+close <- AMD$close
+candleColors <- mapply(candle_color, open, close) 
+
+head(candleColors)
+```
+
+```{r}
+# transpose and reform into df
+amd <- as.data.frame(t(AMD))
+colnames(amd) <- as.character(unlist(amd[1,]))
+amd <- amd[-1, ]
+
+# drop volume row
+amd <- amd[-c(5),]
+
+# melt
+amd <- melt(as.matrix(amd))
+
+# rename columns
+colnames(amd) <- c("type", "date", "value")
+
+head(amd)
+```
+
+```{r}
+## plotting data
+
+# convert to numeric
+amd$value <- as.numeric(as.character(amd$value))
+
+# get price limits
+minval <- round(min(amd$value))
+maxval <- round(max(amd$value))
+
+# set scales
+dollars_scale <- 5
+day_scale <- 7
+
+# toggle x-ticks
+ticks_on <- element_text(angle = -90, vjust = 0.3)
+ticks_off <- element_blank()
+ticks_status <- ticks_off
+
+# plot
+ggplot(amd) + 
+  geom_boxplot(aes(x=date, y=value, group=date), coef=100, fill=candleColors) + 
+  theme(axis.text.x = ticks_status) + coord_cartesian(ylim=c(minval, maxval)) + scale_y_continuous(breaks=seq(minval, maxval, dollars_scale)) +
+  labs(title="AMD", x="date", y="price")
+```
+
+```{r}
+# SLR strategy
+# 1) split data into train and test
+# 2) fit SLR model using price and volume in train
+# 3) buy, sell pts based on deviation over training timeframe
+# 4) equity curve over training timeframe (Sharpe ratio, Drawdown)
+# 5) buy, sell pts based on deviation over testing timeframe
+# 6) equity curve over testing timeframe (Sharpe ratio, Drawdown)
+# 7) compare performance 
+```
+
+```{r}
+## split data into train and test sets
+
+# convert dates to numeric
+amd_df <- as.data.frame(AMD)
+enum <- 1:nrow(amd_df)
+amd_df <- cbind(amd_df, enum)
+
+# get split indexes
+split_percent <- 0.7
+split_indexes <- c(1:floor(split_percent * nrow(amd_df)))
+
+# split train, test
+train <- amd_df[split_indexes, ]
+test <- amd_df[-split_indexes, ]
+
+nrow(train)
+nrow(test)
+nrow(amd_df)
+```
+
+```{r}
+## fit SLR on training
+modfit_slr <- lm(data=train, adjusted ~ volume + enum)
+
+summary(modfit_slr)
+```
+
+```{r}
+## check assumptions, clearly not linear
+plot(x=fitted(modfit_slr), y=rstudent(modfit_slr))
+abline(0,0)
+```
+
+```{r}
+## add fitted and rstd to train dataframe
+
+# store fitted and rstd
+fit_vals <- fitted(modfit_slr)
+rstd_vals <- rstudent(modfit_slr)
+
+# add to train
+train <- cbind(train, fit_vals)
+train <- cbind(train, rstd_vals)
+
+head(train)
+```
+
+```{r}
+## plot adjusted with fitted model
+plot_model <- ggplot() +
+  geom_point(data=train, aes(x=enum, y=adjusted)) +
+  geom_line(data=train, aes(x=enum, y=fit_vals), linetype="longdash", color="blue", size=1) +
+  xlab("day") + ylab("price") + ggtitle("Fitted Model")
+
+plot_model
+```
+
+```{r}
+## algo based on deviation w/ equity curve
+
+# buy: if (rstd <= -2)
+# sell: if (rstd >= 2)
+
+calc_signal <- function(rstd) {
+  divider = 1.4
+  signal = character(length(rstd))
+  for (i in 1:length(rstd)) {
+    if (rstd[i] >= divider) {
+      signal[i] = "SELL"
+    }
+    else if (rstd[i] <= -divider) {
+      signal[i] = "BUY"
+    }
+    else {
+      signal[i] = ""
+    }
+  }
+  return(signal)
+} 
+```
+
+```{r}
+## clean signals 
+clean_duplicates <- function(signal) {
+  len = length(signal)
+  clean_signals = numeric(len)
+  clean_signals[1] = signal[1]
+  prev_signal = signal[1]
+  for (i in 1:(len-1)) {
+    curr_signal = signal[i+1]
+    if (curr_signal == prev_signal && prev_signal != "") {
+      clean_signals[i+1] = ""
+    } 
+    else {
+      clean_signals[i+1] = curr_signal
+    }
+    prev_signal = curr_signal
+  }
+  return(clean_signals)
+}
+```
+
+```{r}
+train_signals <- calc_signal(train$rstd_vals)
+train$train_signals <- clean_duplicates(train_signals)
+
+head(train_signals)
+```
+
+```{r}
+## plot fitted model with signals
+ggplot() +
+  geom_point(data=train, aes(x=enum, y=adjusted)) +
+  geom_line(data=train, aes(x=enum, y=fit_vals), linetype="longdash", color="blue", size=1) +
+  xlab("day") + ylab("price") + ggtitle("Fitted Model") + 
+  geom_text(data=train, aes(x=enum, y=adjusted, label=as.character(train_signals), color=ifelse(train_signals == "BUY", "green", "red")), nudge_x = 7) +
+  scale_color_manual(values = c("green", "red")) + theme(legend.position = "none")
+```
+
+```{r}
+calc_equity <- function(price, signal, initial_equity) {
+  len <- length(signal)
+  sell <- numeric(1)
+  buy <- numeric(1)
+  equity <- numeric(len)
+  curr_equity = initial_equity
+  for (day in 1:len) {
+    curr_price = price[day]
+    curr_signal = signal[day]
+    if (curr_signal == "SELL") {
+      if (length(buy) == 0) {
+         sell <- append(sell, curr_price)
+      }
+      else {
+        # store initial buy position
+        # calc p&l
+        # remove buy position
+        # add change to curr_equity
+        # add curr_equity to equity array
+      }
+    }
+  }
+}
+```
+

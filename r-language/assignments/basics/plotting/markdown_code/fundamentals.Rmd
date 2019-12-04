@@ -1,0 +1,52 @@
+---
+title: "fundamentals"
+author: "Joseph Kim"
+date: "12/3/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# import data
+data <- mtcars
+head(data)
+```
+
+## basic
+
+```{r fig.width=5, fig.height=5, fig.align='center'}
+# {r fig.width=5, fig.height=5, fig.align='center'}
+# ^ note adjusted plot sizing above ^
+plot(data$disp)
+```
+
+## subplotting & styling
+
+```{r fig.width = 15, fig.height = 7}
+# {r fig.width = 15, fig.height = 7}
+
+# plots along rows left -> right, top -> bottom
+par(mfrow = c(2, 4)) # row = 2, col = 4 
+# plots along columns top -> bottom, left -> right
+par(mfcol = c(2, 4)) # row = 2, col = 4 
+
+# different styles, sizes, colors
+plot(data$disp, type = "p", col = "blue") # points
+plot(data$disp, type = "l", col = "red", lty = 2) # lines
+plot(data$disp, type = "b", col = "green", lty = 2, lwd = 4) # points and lines
+plot(data$disp, type = "o", col = "black", lty = 2, lwd = 2, pch = 22, cex = 4.5) # both points and lines overlap
+
+# custom axes horizontal vertical labeling
+g_range <- range(0, data$disp) # range from 0 to max of disp
+plot(data$disp, type = "c", col = "blue", axes = FALSE, ylim = g_range) # line parts of "b"
+axis(1, at = seq(0, 30, 5), lab = c("Mon","Tue","Wed","Thu","Fri", "Sat", "Sun"))
+axis(2, las = 1, at = seq(0, 500, 100), lab = c("level 0", "level 1", "level 2", "level 3", "level 4", "level 5"))
+
+# specialty graphs
+plot(data$disp, type = "h", col = "blue") # histogram like vertical lines
+plot(data$disp, type = "n", col = "blue", ann = FALSE) # no plot
+title(main = "Title Here", xlab = "index", ylab = "disp") # custom labeling
+```
