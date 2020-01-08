@@ -9,12 +9,12 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r echo=TRUE, results='hide'}
 library(quantmod)
 library(ggplot2)
 ```
 
-```{r}
+```{r echo=FALSE, results='hide'}
 # define timeframe
 start_date = as.Date("2018-11-15")
 end_date = as.Date("2019-11-25")

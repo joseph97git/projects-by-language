@@ -19,7 +19,7 @@ library(knitr)
 library(gridExtra)
 ```
 
-```{r}
+```{r echo=FALSE}
 ## retrieving data
 
 # define timeframe
