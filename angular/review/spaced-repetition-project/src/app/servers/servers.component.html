@@ -1,0 +1,20 @@
+<h3>Data Binding</h3>
+<hr />
+<p>This is string interpolation: {{ status }}</p>
+<hr />
+<p>This is one-way binding.</p>
+<p [innerText]="name"></p>
+<hr />
+<button class="btn-btn-primary" (click)="switchStatus()">Switch Status</button>
+<p>This is event binding in action: {{ status }}</p>
+<hr />
+<p>This is another form of event binding!</p>
+<input type="text" class="form-control" (input)="updateName($event)" />
+<p>{{ message }}</p>
+<hr />
+<p>This is two-way binding</p>
+<input [(ngModel)]="dynamicMessage" />
+<p>{{ dynamicMessage }}</p>
+<hr />
+<h3>Directives</h3>
+<hr />
