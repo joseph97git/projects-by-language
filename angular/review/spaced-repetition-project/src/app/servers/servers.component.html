@@ -1,0 +1,49 @@
+<h3>Databinding</h3>
+<hr />
+<p>This is string interpolation: {{ status }}</p>
+<hr />
+<p>This is one-way binding.</p>
+<p [innerText]="name"></p>
+<hr />
+<button class="btn-btn-primary" (click)="switchStatus()" type="button">
+  Switch Status
+</button>
+<p>This is event binding in action: {{ status }}</p>
+<hr />
+<p>This is another form of event binding!</p>
+<input type="text" class="form-control" (input)="updateName($event)" />
+<p>{{ message }}</p>
+<hr />
+<p>This is two-way binding</p>
+<input [(ngModel)]="dynamicMessage" />
+<p>{{ dynamicMessage }}</p>
+<hr />
+<h3>Directives</h3>
+<hr />
+<button class="btn-btn-primary" (click)="switchDisplayInfo()" type="button">
+  Switch Display
+</button>
+<p *ngIf="displayInfo; else otherDisplay">This is *ngIf at work!</p>
+<hr />
+<ng-template #otherDisplay>
+  <p>
+    This is "else" at work!
+  </p>
+</ng-template>
+<hr />
+<button class="btn-btn-primary" (click)="shutdownRunning()">
+  Change Color
+</button>
+<p [ngStyle]="{ backgroundColor: getColor() }">
+  This is ngStyle and ternary expressions at work!
+</p>
+<hr />
+<p [ngClass]="{ online: running === 'online' }">
+  This is ngClass and ternary expressions at work!
+</p>
+<hr />
+<p>This is *ngFor at work!</p>
+<p *ngFor="let server of servers">{{ server }}</p>
+<hr>
+<p>This is *ngFor with indexing at work!</p>
+<p *ngFor="let server of servers; let i = index">{{ i }}</p>
